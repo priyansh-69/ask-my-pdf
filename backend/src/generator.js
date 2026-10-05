@@ -32,14 +32,32 @@ export async function generateAnswer(messages) {
     }
   }
 
-  const response = await ai.models.generateContent({
-    model: CHAT_MODEL,
-    contents,
-    config: {
-      temperature: 0.2, // low temperature: we want grounded, consistent answers
-      ...(systemInstruction ? { systemInstruction } : {}),
-    },
-  });
+  const modelCandidates = [
+    CHAT_MODEL,
+    "gemini-3.5-flash",
+    "gemini-flash-latest",
+  ].filter(Boolean);
 
-  return response.text;
+  let lastError;
+  for (const model of [...new Set(modelCandidates)]) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents,
+        config: {
+          temperature: 0.2, // low temperature: we want grounded, consistent answers
+          ...(systemInstruction ? { systemInstruction } : {}),
+        },
+      });
+      return response.text;
+    } catch (err) {
+      lastError = err;
+      if (err?.status === 503 || err?.status === 404 || err?.status === 429) {
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw lastError;
 }
