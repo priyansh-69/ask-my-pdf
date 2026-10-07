@@ -49,7 +49,7 @@ export default function DocumentWorkstation() {
     {
       id: "initial-assistant-msg",
       role: "assistant",
-      text: "Upload a PDF, Word document (`.docx`), or spreadsheet (`.csv`, `.xlsx`) in the left inspector. I will answer queries strictly grounded in its contents with page citations.",
+      text: "Upload a PDF, Word document (`.doc`, `.docx`), or Excel spreadsheet (`.xlsx`, `.xls`, `.csv`) in the left inspector. I will answer queries strictly grounded in its contents with page/sheet citations.",
       sources: [],
     },
   ]);
@@ -284,7 +284,7 @@ export default function DocumentWorkstation() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.docx,.csv,.xls,.xlsx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+                accept=".pdf,.doc,.docx,.csv,.xls,.xlsx,.tsv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
                 onChange={handleFileChange}
                 disabled={isUploading}
               />
@@ -294,7 +294,7 @@ export default function DocumentWorkstation() {
               <div className="dropzone-text">
                 {isUploading ? "Processing & Chunking..." : "Choose or drop file"}
               </div>
-              <div className="dropzone-subtext">PDF, DOCX, CSV, XLSX (Up to 25MB)</div>
+              <div className="dropzone-subtext">PDF, DOC, DOCX, XLS, XLSX, CSV (Up to 25MB)</div>
             </div>
           </div>
 

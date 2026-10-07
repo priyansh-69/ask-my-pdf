@@ -56,7 +56,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
         mimetype: req.file.mimetype,
       });
       return res.status(415).json({
-        error: "Unsupported file type. Upload a PDF, DOCX, CSV, XLS, or XLSX file.",
+        error: "Unsupported file type. Upload a PDF, Word document (.doc, .docx), or spreadsheet (.csv, .xls, .xlsx).",
       });
     }
 
