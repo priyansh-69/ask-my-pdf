@@ -19,7 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = "https://ask-my-pdf-igbh.onrender.com";
 
 const QUICK_QUERIES = [
   {
