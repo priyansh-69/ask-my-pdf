@@ -2,8 +2,10 @@
  * SESSION 2 — GENERATION
  * -----------------------
  * Sends the augmented prompt to the Gemini model and returns the answer.
+ * Includes automatic retry on temporary high-demand spikes (503/429).
  */
 import { GoogleGenAI } from "@google/genai";
+import logger from "./logger.js";
 
 const apiKey =
   process.env.GEMINI_API_KEY ||
@@ -11,7 +13,11 @@ const apiKey =
   process.env.OPENAI_API_KEY;
 
 const ai = new GoogleGenAI(apiKey ? { apiKey } : {});
-const CHAT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const CHAT_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /**
  * @param {Array<{ role: string, content: string }>} messages
@@ -34,28 +40,32 @@ export async function generateAnswer(messages) {
 
   const modelCandidates = [
     CHAT_MODEL,
-    "gemini-3.5-flash",
-    "gemini-flash-latest",
+    "gemini-3.8-flash",
   ].filter(Boolean);
 
   let lastError;
   for (const model of [...new Set(modelCandidates)]) {
-    try {
-      const response = await ai.models.generateContent({
-        model,
-        contents,
-        config: {
-          temperature: 0.2, // low temperature: we want grounded, consistent answers
-          ...(systemInstruction ? { systemInstruction } : {}),
-        },
-      });
-      return response.text;
-    } catch (err) {
-      lastError = err;
-      if (err?.status === 503 || err?.status === 404 || err?.status === 429) {
-        continue;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents,
+          config: {
+            temperature: 0.2, // low temperature: grounded, consistent answers
+            ...(systemInstruction ? { systemInstruction } : {}),
+          },
+        });
+        return response.text;
+      } catch (err) {
+        lastError = err;
+        const isTransient = err?.status === 503 || err?.status === 429 || err?.message?.includes("503") || err?.message?.includes("high demand");
+        if (isTransient && attempt < 3) {
+          logger.warn(`Gemini generation 503/429 spike. Retrying attempt ${attempt}/3 in ${attempt * 1200}ms...`);
+          await sleep(attempt * 1200);
+          continue;
+        }
+        break;
       }
-      throw err;
     }
   }
 

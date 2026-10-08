@@ -85,18 +85,22 @@ app.post("/upload", upload.single("file"), async (req, res) => {
       chunkCount: chunks.length,
     });
 
-    // 3. Embed (batch, in groups to stay under API limits)
-    const BATCH_SIZE = 100;
+    // 3. Embed (batch, in smaller groups to stay under Gemini rate & token limits)
+    const BATCH_SIZE = 20;
     const allEmbeddings = [];
     for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
       const batch = chunks.slice(i, i + BATCH_SIZE).map((c) => c.text);
       logger.debug("Embedding batch", {
         documentId,
-        batchIndex: i / BATCH_SIZE,
+        batchIndex: Math.floor(i / BATCH_SIZE) + 1,
+        totalBatches: Math.ceil(chunks.length / BATCH_SIZE),
         batchSize: batch.length,
       });
       const embeddings = await embedTexts(batch);
       allEmbeddings.push(...embeddings);
+      if (i + BATCH_SIZE < chunks.length) {
+        await new Promise((r) => setTimeout(r, 200)); // small delay between batches to respect RPM
+      }
     }
 
     // 4. Store
